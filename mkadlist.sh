@@ -1,13 +1,9 @@
 #!/usr/bin/env bash
 
 # specify which lists to use
-HOSTS=(hosts/data/adaway.org/hosts hosts/alternates/social-only/hosts)
-LABEL=unified
-SCRIPT=ip-dns-static-${LABEL}-$(date +%Y%m%d-%H%M) # .auto
+hosts=(hosts StevenBlack/hosts)
+label=unified
+file=ip-dns-static-$label-$(date +%Y%m%d-%H%M).auto.rsc
+script='BEGIN { printf("%s", ":do { :local hosts {") } /(127|0).0.0.(1|0)/ { printf("\"%s\";", $2); ++c } END { printf("%s", "}; :foreach host in=$hosts do={ :do { /ip/dns/static add name=$host type=NXDOMAIN comment=" l " } on-error={ :nothing }; }; }") } END { print(c, f) > "/dev/stderr" } '
 
-# process source lists into script formatted file
-FMT='NF {print "add name="$2" type=NXDOMAIN comment=" l}'
-for file in ${HOSTS[@]}; do
-  [[ -f $file ]] && echo "file: $file: Merged"; grep -e "0\.0\.0\.0" -e "127\.0\.0\.1" $file | awk -v l=${LABEL} "${FMT}" >> ${SCRIPT}
-done
-(sort ${SCRIPT} | uniq | { echo '/ip/dns/static'; cat; } >> ${SCRIPT}.rsc); wc -lc ${SCRIPT}.rsc; rm ${SCRIPT}
+ls -all ${hosts[*]} && sort ${hosts[*]} | uniq | awk -v l=$label -v f=$file "${script}" > $file
