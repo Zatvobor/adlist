@@ -7,12 +7,17 @@ The resulted bundle has a form:
 
 ```
 :do {
-  :local hosts {"example.com";"example2.com";"example3.com";};
-  :foreach host in=$hosts do={
-    :do { /ip/dns/static add name=$host type=NXDOMAIN comment=unified } on-error={ :nothing };
-  }
-}
-
+    :local hosts {"example.com";"sub.+\\.example\\.com";};
+    :foreach host in=$hosts do={
+        :do {
+            :if ($host ~ "\\.\\+") do={
+                /ip/dns/static/add regexp=$host type=NXDOMAIN comment=example;
+            } else={
+                /ip/dns/static/add name=$host type=NXDOMAIN comment=example;
+            };
+        } on-error={ :nothing };
+    };
+};
 ```
 
 I've added a `submodule` [which contains a curated list](https://github.com/StevenBlack/hosts) of hosts, in case if you don't have any.
